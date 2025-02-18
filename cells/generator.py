@@ -326,7 +326,8 @@ class Generator:
             self.ap.logger.warning(
                 f"达到最大迭代次数 {max_iterations}，可能存在异常标签"
             )
-
+        if "<think>" in result:
+            result = "喵~"
         return result
 
     def _parse_json_list(self, response: str, generate_tags: bool = False) -> list:
