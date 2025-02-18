@@ -14,16 +14,22 @@ class Thoughts:
         self.ap = ap
         self._generator = Generator(ap)
 
-    async def _analyze_person_conversations(self, memory: Memory, profile: str, background: str, manner: str) -> str:
+    async def _analyze_person_conversations(
+        self, memory: Memory, profile: str, background: str, manner: str
+    ) -> str:
         conversations = memory.short_term_memory[-memory.analyze_max_conversations :]
-        speakers, conversations_str = memory.get_conversations_str_for_person(conversations)
+        speakers, conversations_str = memory.get_conversations_str_for_person(
+            conversations
+        )
 
         last_role = memory.get_last_role(conversations)
         last_content = memory.get_last_content(conversations)
         last_speaker = memory.get_last_speaker(conversations)
         user_prompt = f"这是之前记录：“{conversations_str}”。"
         if profile or background:
-            user_prompt += f"这是{memory.assistant_name}的角色设定“{profile}{background}”。"
+            user_prompt += (
+                f"这是{memory.assistant_name}的角色设定“{profile}{background}”。"
+            )
         if manner:
             user_prompt += f"这是你的行为准则“{manner}”。"
         if last_role == "narrator":
@@ -36,7 +42,9 @@ class Thoughts:
         analysis_result = await self._generator.return_string(user_prompt)
         return analysis_result
 
-    async def generate_person_prompt(self, memory: Memory, card: Cards) -> typing.Tuple[str, str]:
+    async def generate_person_prompt(
+        self, memory: Memory, card: Cards
+    ) -> typing.Tuple[str, str]:
         conversations = memory.short_term_memory
         _, conversations_str = memory.get_conversations_str_for_person(conversations)
         user_prompt = f"这是之前记录：“{conversations_str}”。"
@@ -50,7 +58,9 @@ class Thoughts:
             profile = memory.to_custom_names(card.get_profile())
             background = memory.to_custom_names(card.get_background())
             manner = memory.to_custom_names(card.get_manner())
-            analysis = await self._analyze_person_conversations(memory, profile, background, manner)
+            analysis = await self._analyze_person_conversations(
+                memory, profile, background, manner
+            )
 
             if last_role == "narrator":
                 user_prompt += f"你要作为{memory.assistant_name}根据最后发生的事情“{last_content}”参考分析结果“{analysis}”对{last_speaker}做出符合{memory.assistant_name}角色设定的回复。"
@@ -68,11 +78,20 @@ class Thoughts:
 
         return user_prompt, analysis
 
-    async def generate_character_prompt(self, memory: Memory, card: Cards, character: str) -> typing.Tuple[str, str]:
-        unsupport_list = [f"{memory.assistant_name.lower()}", "assistant", "旁白", "narrator"]
+    async def generate_character_prompt(
+        self, memory: Memory, card: Cards, character: str
+    ) -> typing.Tuple[str, str]:
+        unsupport_list = [
+            f"{memory.assistant_name.lower()}",
+            "assistant",
+            "旁白",
+            "narrator",
+        ]
         if character.lower() in unsupport_list:
             return ""
-        profile = memory.to_custom_names(card.get_profile() + card.get_background() + card.get_manner())
+        profile = memory.to_custom_names(
+            card.get_profile() + card.get_background() + card.get_manner()
+        )
         # 其他角色的人称需要额外处理
         profile = profile.replace("你", memory.assistant_name)
         profile = profile.replace("我", memory.user_name)
@@ -107,11 +126,15 @@ class Thoughts:
 
         return user_prompt
 
-    async def _analyze_group_conversations(self, memory: Memory, profile: str, background: str) -> str:
+    async def _analyze_group_conversations(
+        self, memory: Memory, profile: str, background: str
+    ) -> str:
         conversations = memory.short_term_memory[-memory.analyze_max_conversations :]
         user_prompt = ""
         if profile or background:
-            user_prompt += f"这是{memory.assistant_name}的角色设定“{profile}{background}”。"
+            user_prompt += (
+                f"这是{memory.assistant_name}的角色设定“{profile}{background}”。"
+            )
         user_prompt += f"""站在{memory.assistant_name}的角度分析群聊消息记录“{memory.get_conversations_str_for_group(conversations)}”群友们的意图。"""
         user_prompt += f"""消息格式为群友昵称说：“”。确保分析简明扼要，意图明确。只提供{memory.max_thinking_words}字以内的分析结果，不需要其他说明。"""
 
@@ -119,13 +142,19 @@ class Thoughts:
         analysis_result = await self._generator.return_string(user_prompt)
         return analysis_result
 
-    async def generate_group_prompt(self, memory: Memory, card: Cards, unreplied_count: int) -> typing.Tuple[str, str]:
+    async def generate_group_prompt(
+        self, memory: Memory, card: Cards, unreplied_count: int
+    ) -> typing.Tuple[str, str]:
         conversations = memory.short_term_memory
         count, unreplied_conversations = memory.get_unreplied_msg(unreplied_count)
         replied_conversations = conversations[:-count]
 
-        unreplied_conversations_str = memory.get_conversations_str_for_group(unreplied_conversations)
-        replied_conversations_str = memory.get_conversations_str_for_group(replied_conversations)
+        unreplied_conversations_str = memory.get_conversations_str_for_group(
+            unreplied_conversations
+        )
+        replied_conversations_str = memory.get_conversations_str_for_group(
+            replied_conversations
+        )
 
         user_prompt = ""
         analysis = ""
@@ -135,16 +164,20 @@ class Thoughts:
         if memory.conversation_analysis_flag:
             profile = memory.to_custom_names(card.get_profile())
             background = memory.to_custom_names(card.get_background())
-            analysis = await self._analyze_group_conversations(memory, profile, background)
+            analysis = await self._analyze_group_conversations(
+                memory, profile, background
+            )
             user_prompt += f"这是未回复的群聊消息记录“{unreplied_conversations_str}”。消息格式为群友昵称说：“”。你要作为{memory.assistant_name}参考群聊消息记录分析结果“{analysis}”对未回复的群聊消息记录做出符合{memory.assistant_name}角色设定的回复。确保回复充分体现{memory.assistant_name}的性格特征和情感反应。"
         else:
             user_prompt += f"这是未回复的群聊消息记录“{unreplied_conversations_str}”。消息格式为群友昵称说：“”。你要作为{memory.assistant_name}对未回复的群聊消息记录做出符合{memory.assistant_name}角色设定的回复。确保回复充分体现{memory.assistant_name}的性格特征和情感反应。"
 
-        user_prompt += f"不称呼群友昵称，使用你或你们代指群友。只提供{memory.assistant_name}的回复内容，不需要消息记录格式。"
+        user_prompt += f"其中@242932307 表示对{memory.assistant_name}说的话,或是对{memory.assistant_name}的行动,{memory.assistant_name}应优先对最后一个动作做出反应,再考虑之前的聊天内容,只提供{memory.assistant_name}的回复内容，不需要消息记录格式。"
 
         return user_prompt, analysis
 
-    async def analyze_picture(self, content_list: list[llm_entities.ContentElement]) -> str:
+    async def analyze_picture(
+        self, content_list: list[llm_entities.ContentElement]
+    ) -> str:
         text_msg = ""
         new_content_list = []
         user_prompt = f"""查看以下图片，并用详细的文字描述图片中的人物、物体、环境、背景、颜色和动作等细节。如果图片中有文字，指出并转录这些文字。尽可能详细地描述每个细节，包括颜色、形状、尺寸、位置等。确保描述中没有主观评价，只包含客观的观察。只提供50字以内的描述，不需要其他说明。"""
