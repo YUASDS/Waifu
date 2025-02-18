@@ -743,7 +743,7 @@ class Waifu(BasePlugin):
             else:
                 await asyncio.sleep(
                     len(reply_new) / 8
-                )  # 根据字数计算延迟时间，假设每2个字符1秒
+                )  # 根据字数计算延迟时间，假设每8个字符1秒
 
     async def _vision(self, ctx: EventContext) -> str:
         # 参考自preproc.py PreProcessor
