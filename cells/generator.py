@@ -251,11 +251,11 @@ class Generator:
             "发送请求：\n{}".format(self.messages_to_readable_str(messages))
         )
 
-        response = await model_info.requester.call(
-            None, model=model_info, messages=messages
-        )
-        cleaned_response = self.clean_response(response.content)
-
+        # response = await model_info.requester.call(
+        #     None, model=model_info, messages=messages
+        # )
+        # cleaned_response = self.clean_response(response.content)
+        cleaned_response = "图片"
         self.ap.logger.info("模型回复：\n{}".format(cleaned_response))
         return cleaned_response
 

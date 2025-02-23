@@ -522,7 +522,7 @@ class Waifu(BasePlugin):
         )  # 默认为当前short_term_memory_size条聊天记录
         if config.thinking_mode_flag:
             user_prompt, analysis = await config.thoughts.generate_group_prompt(
-                config.memory, config.cards, unreplied_count
+                config.memory, config.cards, unreplied_count, ctx
             )
             if config.display_thinking and config.conversation_analysis_flag:
                 await self._reply(ctx, f"【分析】：{analysis}")
@@ -694,7 +694,7 @@ class Waifu(BasePlugin):
 
     async def _send_personate_reply(self, ctx: EventContext, response: str):
         config = self.waifu_cache[ctx.event.launcher_id]
-        parts = re.split(r"([，。？！,.?!\n~〜])", response)  # 保留分隔符
+        parts = re.split(r"([，。？！,?!\n~〜])", response)  # 保留分隔符
         combined_parts = []
         temp_part = ""
 
@@ -774,10 +774,10 @@ class Waifu(BasePlugin):
                         )
         if not has_image:
             return str(query.message_chain)
-        else:
-            return await self.waifu_cache[
-                ctx.event.launcher_id
-            ].thoughts.analyze_picture(content_list)
+        # else:
+        #     return await self.waifu_cache[
+        #         ctx.event.launcher_id
+        #     ].thoughts.analyze_picture(content_list)
 
     def _remove_blank_lines(self, text: str) -> str:
         lines = text.split("\n")

@@ -1,5 +1,6 @@
 import typing
 from pkg.core import app
+from pkg.plugin.context import EventContext
 from plugins.Waifu.cells.generator import Generator
 from plugins.Waifu.organs.memories import Memory
 from plugins.Waifu.cells.cards import Cards
@@ -143,8 +144,9 @@ class Thoughts:
         return analysis_result
 
     async def generate_group_prompt(
-        self, memory: Memory, card: Cards, unreplied_count: int
+        self, memory: Memory, card: Cards, unreplied_count: int, ctx: EventContext
     ) -> typing.Tuple[str, str]:
+        bot_account_id = ctx.event.query.adapter.bot_account_id
         conversations = memory.short_term_memory
         count, unreplied_conversations = memory.get_unreplied_msg(unreplied_count)
         replied_conversations = conversations[:-count]
@@ -171,7 +173,7 @@ class Thoughts:
         else:
             user_prompt += f"这是未回复的群聊消息记录“{unreplied_conversations_str}”。消息格式为群友昵称说：“”。你要作为{memory.assistant_name}对未回复的群聊消息记录做出符合{memory.assistant_name}角色设定的回复。确保回复充分体现{memory.assistant_name}的性格特征和情感反应。"
 
-        user_prompt += f"其中@242932307 表示对{memory.assistant_name}说的话,或是对{memory.assistant_name}的行动,{memory.assistant_name}应优先对最后一个动作做出反应,再考虑之前的聊天内容,只提供{memory.assistant_name}的回复内容，不需要消息记录格式。"
+        user_prompt += f"其中@{bot_account_id} 表示对{memory.assistant_name}说的话,或是对{memory.assistant_name}的行动,{memory.assistant_name}应优先对最后一个动作做出反应,再考虑之前的聊天内容,只提供{memory.assistant_name}的回复内容，不需要消息记录格式。"
 
         return user_prompt, analysis
 
