@@ -41,9 +41,15 @@ class Memory:
         self._memory_batch_size = 50
         self._retrieve_top_n = 5
         self._summary_max_tags = 50
-        self._long_term_memory_file = f"data/plugins/Waifu/data/memories_{launcher_id}.json"
-        self._conversations_file = f"data/plugins/Waifu/data/conversations_{launcher_id}.log"
-        self._short_term_memory_file = f"data/plugins/Waifu/data/short_term_memory_{launcher_id}.json"
+        self._long_term_memory_file = (
+            f"data/plugins/Waifu/data/memories_{launcher_id}.json"
+        )
+        self._conversations_file = (
+            f"data/plugins/Waifu/data/conversations_{launcher_id}.log"
+        )
+        self._short_term_memory_file = (
+            f"data/plugins/Waifu/data/short_term_memory_{launcher_id}.json"
+        )
         self._summarization_mode = False
         self._status_file = ""
         self._thinking_mode_flag = True
@@ -53,10 +59,16 @@ class Memory:
         self._has_preset = True
 
     async def load_config(self, character: str, launcher_id: str, launcher_type: str):
-        waifu_config = ConfigManager(f"data/plugins/Waifu/config/waifu", "plugins/Waifu/templates/waifu", launcher_id)
+        waifu_config = ConfigManager(
+            f"data/plugins/Waifu/config/waifu",
+            "plugins/Waifu/templates/waifu",
+            launcher_id,
+        )
         await waifu_config.load_config(completion=True)
 
-        self.conversation_analysis_flag = waifu_config.data.get("conversation_analysis", True)
+        self.conversation_analysis_flag = waifu_config.data.get(
+            "conversation_analysis", True
+        )
         self._thinking_mode_flag = waifu_config.data.get("thinking_mode", True)
         self._short_term_memory_size = waifu_config.data["short_term_memory_size"]
         self._memory_batch_size = waifu_config.data["memory_batch_size"]
@@ -64,12 +76,20 @@ class Memory:
         self._summary_max_tags = waifu_config.data["summary_max_tags"]
         self._summarization_mode = waifu_config.data.get("summarization_mode", False)
 
-        self.analyze_max_conversations = waifu_config.data.get("analyze_max_conversations", 9)
-        self.narrate_max_conversations = waifu_config.data.get("narrat_max_conversations", 8)
-        self.value_game_max_conversations = waifu_config.data.get("value_game_max_conversations", 5)
-        self.response_min_conversations = waifu_config.data.get("response_min_conversations", 1)
+        self.analyze_max_conversations = waifu_config.data.get(
+            "analyze_max_conversations", 9
+        )
+        self.narrate_max_conversations = waifu_config.data.get(
+            "narrat_max_conversations", 8
+        )
+        self.value_game_max_conversations = waifu_config.data.get(
+            "value_game_max_conversations", 5
+        )
+        self.response_min_conversations = waifu_config.data.get(
+            "response_min_conversations", 1
+        )
         if self.response_min_conversations < 1:
-            self.response_min_conversations = 1 # 最小值为1
+            self.response_min_conversations = 1  # 最小值为1
         self.response_rate = waifu_config.data.get("response_rate", 0.7)
         self.max_thinking_words = waifu_config.data.get("max_thinking_words", 30)
         self.max_narrat_words = waifu_config.data.get("max_narrat_words", 30)
@@ -77,15 +97,22 @@ class Memory:
 
         if character != "off":
             self._has_preset = True
-            self._status_file = f"data/plugins/Waifu/data/{character}_{launcher_id}.json"
-            character_config = ConfigManager(f"data/plugins/Waifu/cards/{character}", f"plugins/Waifu/templates/default_{launcher_type}")
+            self._status_file = (
+                f"data/plugins/Waifu/data/{character}_{launcher_id}.json"
+            )
+            character_config = ConfigManager(
+                f"data/plugins/Waifu/cards/{character}",
+                f"plugins/Waifu/templates/default_{launcher_type}",
+            )
             await character_config.load_config(completion=False)
             self.user_name = character_config.data.get("user_name", "用户")
             self.assistant_name = character_config.data.get("assistant_name", "助手")
         else:
             self._has_preset = False
 
-    async def _tag_conversations(self, conversations: typing.List[llm_entities.Message], summary_flag: bool) -> typing.Tuple[str, typing.List[str]]:
+    async def _tag_conversations(
+        self, conversations: typing.List[llm_entities.Message], summary_flag: bool
+    ) -> typing.Tuple[str, typing.List[str]]:
         # 生成Tags：
         # 1、短期记忆转换长期记忆时：进行记忆总结
         # 2、对话提取记忆时：直接拼凑末尾对话
@@ -95,7 +122,9 @@ class Memory:
             memory = self.get_last_content(conversations, 10)
 
         # 使用TexSmart HTTP API生成词频统计并获取i18n信息和related信息
-        term_freq_counter, i18n_list, related_list = await self._text_analyzer.term_freq(memory)
+        term_freq_counter, i18n_list, related_list = (
+            await self._text_analyzer.term_freq(memory)
+        )
 
         # 从词频统计中提取前N个高频词及其i18n标签作为标签
         top_n = self._summary_max_tags - len(i18n_list)
@@ -114,7 +143,9 @@ class Memory:
 
         return memory, tags
 
-    async def _generate_summary(self, conversations: typing.List[llm_entities.Message]) -> str:
+    async def _generate_summary(
+        self, conversations: typing.List[llm_entities.Message]
+    ) -> str:
         user_prompt_summary = ""
         if self._launcher_type == "person":
             _, conversations_str = self.get_conversations_str_for_person(conversations)
@@ -127,11 +158,15 @@ class Memory:
 
     async def _tag_and_add_conversations(self):
         if self.short_term_memory:
-            summary, tags = await self._tag_conversations(self.short_term_memory[: self._memory_batch_size], True)
-            tags.extend(self._generate_time_tags()) # 增加当天时间标签并去重
+            summary, tags = await self._tag_conversations(
+                self.short_term_memory[: self._memory_batch_size], True
+            )
+            tags.extend(self._generate_time_tags())  # 增加当天时间标签并去重
             tags = list(set(tags))
             if len(self.short_term_memory) > self._memory_batch_size:
-                self.short_term_memory = self.short_term_memory[self._memory_batch_size :]
+                self.short_term_memory = self.short_term_memory[
+                    self._memory_batch_size :
+                ]
             self._add_long_term_memory(summary, tags)
             self._save_long_term_memory_to_file()
             self._save_short_term_memory_to_file()
@@ -150,13 +185,15 @@ class Memory:
 
         return [year_tag, month_tag, day_tag, period_tag]
 
-    def _extract_time_and_add_tags(self, message: typing.Union[str, object]) -> typing.List[str]:
+    def _extract_time_and_add_tags(
+        self, message: typing.Union[str, object]
+    ) -> typing.List[str]:
         """
-            提取 message_content 中的时间戳，并添加相应的时间标签。
-            
-            已匹配过的关键词不能再次匹配，字数多的关键词优先。
-            匹配后从句子中删除已匹配的文字。
-            """
+        提取 message_content 中的时间戳，并添加相应的时间标签。
+
+        已匹配过的关键词不能再次匹配，字数多的关键词优先。
+        匹配后从句子中删除已匹配的文字。
+        """
         ct = str(message.get_content_platform_message_chain())
         time_pattern = r"\[(\d{2}年\d{2}月\d{2}日(?:上午|下午)?\d{2}时\d{2}分)\]"
         matches = re.findall(time_pattern, ct)
@@ -168,40 +205,83 @@ class Memory:
         time_tags = []
 
         # 处理日期关键词
-        relative_days = {"大后天": 3, "后天": 2, "明天": 1, "今天": 0, 
-                            "昨天": -1, "前天": -2, "大前天": -3}
+        relative_days = {
+            "大后天": 3,
+            "后天": 2,
+            "明天": 1,
+            "今天": 0,
+            "昨天": -1,
+            "前天": -2,
+            "大前天": -3,
+        }
         for day_str, offset in sorted(relative_days.items(), key=lambda x: -len(x[0])):
             if day_str in ct:
                 target_date = now + timedelta(days=offset)
-                time_tags += [f"{target_date.year}年", f"{target_date.month}月", f"{target_date.day}日"]
+                time_tags += [
+                    f"{target_date.year}年",
+                    f"{target_date.month}月",
+                    f"{target_date.day}日",
+                ]
                 ct = ct.replace(day_str, "", 1)
 
         # 处理本周、上周、下周和扩展周期
-        week_prefixes = {"上上": -14, "上": -7, "": 0, "这": 0, "本": 0, "下": 7, "下下": 14}
-        weekdays = {"周一": 0, "周二": 1, "周三": 2, "周四": 3, "周五": 4, "周六": 5, "周日": 6}
-        for prefix, week_offset in sorted(week_prefixes.items(), key=lambda x: -len(x[0])):
+        week_prefixes = {
+            "上上": -14,
+            "上": -7,
+            "": 0,
+            "这": 0,
+            "本": 0,
+            "下": 7,
+            "下下": 14,
+        }
+        weekdays = {
+            "周一": 0,
+            "周二": 1,
+            "周三": 2,
+            "周四": 3,
+            "周五": 4,
+            "周六": 5,
+            "周日": 6,
+        }
+        for prefix, week_offset in sorted(
+            week_prefixes.items(), key=lambda x: -len(x[0])
+        ):
             for weekday_str, weekday_offset in weekdays.items():
                 week_str = f"{prefix}{weekday_str}"
                 if week_str in ct:
                     start_of_week = now - timedelta(days=now.weekday())
-                    target_date = start_of_week + timedelta(days=week_offset + weekday_offset)
-                    time_tags += [f"{target_date.year}年", f"{target_date.month}月", f"{target_date.day}日"]
+                    target_date = start_of_week + timedelta(
+                        days=week_offset + weekday_offset
+                    )
+                    time_tags += [
+                        f"{target_date.year}年",
+                        f"{target_date.month}月",
+                        f"{target_date.day}日",
+                    ]
                     ct = ct.replace(week_str, "", 1)
 
         # 完整周添加 (e.g., 下周 = 添加下周一至下周日)
-        for prefix, week_offset in sorted(week_prefixes.items(), key=lambda x: -len(x[0])):
+        for prefix, week_offset in sorted(
+            week_prefixes.items(), key=lambda x: -len(x[0])
+        ):
             week_str = f"{prefix}周"
-            if week_str in ct and prefix: # 跳过仅“周”字避免误触
+            if week_str in ct and prefix:  # 跳过仅“周”字避免误触
                 start_of_week = now - timedelta(days=now.weekday())
                 target_week_start = start_of_week + timedelta(days=week_offset)
                 for weekday_offset in range(7):
                     target_date = target_week_start + timedelta(days=weekday_offset)
-                    time_tags += [f"{target_date.year}年", f"{target_date.month}月", f"{target_date.day}日"]
+                    time_tags += [
+                        f"{target_date.year}年",
+                        f"{target_date.month}月",
+                        f"{target_date.day}日",
+                    ]
                 ct = ct.replace(week_str, "", 1)
 
         # 处理本月、上一个月、下一个月
         month_keywords = {"本月": 0, "上月": -1, "下月": 1, "上个月": -1, "下个月": 1}
-        for month_str, offset in sorted(month_keywords.items(), key=lambda x: -len(x[0])):
+        for month_str, offset in sorted(
+            month_keywords.items(), key=lambda x: -len(x[0])
+        ):
             if month_str in ct:
                 target_month = now.replace(day=1) + timedelta(days=30 * offset)
                 time_tags += [f"{target_month.year}年", f"{target_month.month}月"]
@@ -216,7 +296,10 @@ class Memory:
                 ct = ct.replace(year_str, "", 1)
 
         # 处理时段关键词
-        time_period_keywords = {"上午": ["早上", "清晨", "上午"], "下午": ["晚上", "傍晚", "下午"]}
+        time_period_keywords = {
+            "上午": ["早上", "清晨", "上午"],
+            "下午": ["晚上", "傍晚", "下午"],
+        }
         for tag, keywords in time_period_keywords.items():
             for keyword in sorted(keywords, key=lambda x: -len(x)):
                 if keyword in ct:
@@ -243,17 +326,23 @@ class Memory:
 
         return dt
 
-    def _save_conversations_to_file(self, conversations: typing.List[llm_entities.Message]):
+    def _save_conversations_to_file(
+        self, conversations: typing.List[llm_entities.Message]
+    ):
         try:
             with open(self._conversations_file, "a", encoding="utf-8") as file:
                 for conv in conversations:
                     file.write(conv.readable_str() + "\n")
         except Exception as e:
-            self.ap.logger.error(f"Error saving conversations to file '{self._conversations_file}': {e}")
+            self.ap.logger.error(
+                f"Error saving conversations to file '{self._conversations_file}': {e}"
+            )
 
     def _add_long_term_memory(self, summary: str, tags: typing.List[str]):
         formatted_tags = ", ".join(tags)
-        self.ap.logger.info(f"New memories: \nSummary: {summary}\nTags: {formatted_tags}")
+        self.ap.logger.info(
+            f"New memories: \nSummary: {summary}\nTags: {formatted_tags}"
+        )
         self._long_term_memory.append((summary, tags))
         for tag in tags:
             if tag not in self._tags_index:
@@ -272,7 +361,9 @@ class Memory:
         norm_b = np.linalg.norm(vector_b)
         return 0.0 if norm_a == 0 or norm_b == 0 else dot_product / (norm_a * norm_b)
 
-    def _retrieve_related_memories(self, input_tags: typing.List[str]) -> typing.List[str]:
+    def _retrieve_related_memories(
+        self, input_tags: typing.List[str]
+    ) -> typing.List[str]:
         input_vector = self._get_tag_vector(input_tags)
         similarities = []
 
@@ -296,20 +387,28 @@ class Memory:
             if self._summarization_mode:
                 await self._tag_and_add_conversations()
             else:
-                self.short_term_memory = self.short_term_memory[-self._short_term_memory_size :]
+                self.short_term_memory = self.short_term_memory[
+                    -self._short_term_memory_size :
+                ]
 
     async def remove_last_memory(self) -> str:
         if self.short_term_memory:
-            last_conversation = self.short_term_memory.pop().get_content_platform_message_chain()
+            last_conversation = (
+                self.short_term_memory.pop().get_content_platform_message_chain()
+            )
             self._save_short_term_memory_to_file()
             return last_conversation
 
-    async def load_memory(self, conversations: typing.List[llm_entities.Message]) -> typing.List[str]:
+    async def load_memory(
+        self, conversations: typing.List[llm_entities.Message]
+    ) -> typing.List[str]:
         if not self._long_term_memory:
             return []
         _, tags = await self._tag_conversations(conversations, False)
         for message in conversations:
-            tags.extend(self._extract_time_and_add_tags(message))  # 增加时间相关标签并去重
+            tags.extend(
+                self._extract_time_and_add_tags(message)
+            )  # 增加时间相关标签并去重
         tags = list(set(tags))
         formatted_tags = ", ".join(tags)
         self.ap.logger.info(f"记忆加载中 Tags: {formatted_tags}")
@@ -345,56 +444,104 @@ class Memory:
     def _save_long_term_memory_to_file(self):
         try:
             with open(self._long_term_memory_file, "w", encoding="utf-8") as file:
-                json.dump({"long_term": [{"summary": summary, "tags": tags} for summary, tags in self._long_term_memory], "tags_index": self._tags_index}, file, ensure_ascii=False, indent=4)
+                json.dump(
+                    {
+                        "long_term": [
+                            {"summary": summary, "tags": tags}
+                            for summary, tags in self._long_term_memory
+                        ],
+                        "tags_index": self._tags_index,
+                    },
+                    file,
+                    ensure_ascii=False,
+                    indent=4,
+                )
         except Exception as e:
-            self.ap.logger.error(f"Error saving memory to file '{self._long_term_memory_file}': {e}")
+            self.ap.logger.error(
+                f"Error saving memory to file '{self._long_term_memory_file}': {e}"
+            )
 
     def _save_short_term_memory_to_file(self):
         try:
             with open(self._short_term_memory_file, "w", encoding="utf-8") as file:
-                json.dump([{"role": conv.role, "content": conv.content} for conv in self.short_term_memory], file, ensure_ascii=False, indent=4)
+                json.dump(
+                    [
+                        {"role": conv.role, "content": conv.content}
+                        for conv in self.short_term_memory
+                    ],
+                    file,
+                    ensure_ascii=False,
+                    indent=4,
+                )
         except Exception as e:
-            self.ap.logger.error(f"Error saving memory to file '{self._short_term_memory_file}': {e}")
+            self.ap.logger.error(
+                f"Error saving memory to file '{self._short_term_memory_file}': {e}"
+            )
 
     def _load_long_term_memory_from_file(self):
         try:
             with open(self._long_term_memory_file, "r", encoding="utf-8") as file:
                 file_content = file.read()
                 if not file_content.strip():
-                    self.ap.logger.warning(f"Memory file '{self._long_term_memory_file}' is empty. Starting with empty memory.")
+                    self.ap.logger.warning(
+                        f"Memory file '{self._long_term_memory_file}' is empty. Starting with empty memory."
+                    )
                     return
 
                 data = json.loads(file_content)
-                self._long_term_memory = [(item["summary"], item["tags"]) for item in data["long_term"]]
+                self._long_term_memory = [
+                    (item["summary"], item["tags"]) for item in data["long_term"]
+                ]
                 self._tags_index = data["tags_index"]
         except FileNotFoundError:
-            self.ap.logger.warning(f"Memory file '{self._long_term_memory_file}' not found. Starting with empty memory.")
+            self.ap.logger.warning(
+                f"Memory file '{self._long_term_memory_file}' not found. Starting with empty memory."
+            )
         except json.JSONDecodeError as e:
-            self.ap.logger.error(f"Error decoding JSON from memory file '{self._long_term_memory_file}': {e}. Starting with empty memory.")
+            self.ap.logger.error(
+                f"Error decoding JSON from memory file '{self._long_term_memory_file}': {e}. Starting with empty memory."
+            )
         except Exception as e:
-            self.ap.logger.error(f"Unexpected error loading memory file '{self._long_term_memory_file}': {e}")
+            self.ap.logger.error(
+                f"Unexpected error loading memory file '{self._long_term_memory_file}': {e}"
+            )
 
     def _load_short_term_memory_from_file(self):
         try:
             with open(self._short_term_memory_file, "r", encoding="utf-8") as file:
                 file_content = file.read()
                 if not file_content.strip():
-                    self.ap.logger.warning(f"Cache file '{self._short_term_memory_file}' is empty. Starting with empty memory.")
+                    self.ap.logger.warning(
+                        f"Cache file '{self._short_term_memory_file}' is empty. Starting with empty memory."
+                    )
                     return
                 data = json.loads(file_content)
-                self.short_term_memory = [llm_entities.Message(role=item["role"], content=item["content"]) for item in data]
+                self.short_term_memory = [
+                    llm_entities.Message(role=item["role"], content=item["content"])
+                    for item in data
+                ]
         except FileNotFoundError:
-            self.ap.logger.warning(f"Cache file '{self._short_term_memory_file}' not found. Starting with empty memory.")
+            self.ap.logger.warning(
+                f"Cache file '{self._short_term_memory_file}' not found. Starting with empty memory."
+            )
         except json.JSONDecodeError as e:
-            self.ap.logger.error(f"Error decoding JSON from memory file '{self._short_term_memory_file}': {e}. Starting with empty memory.")
+            self.ap.logger.error(
+                f"Error decoding JSON from memory file '{self._short_term_memory_file}': {e}. Starting with empty memory."
+            )
         except Exception as e:
-            self.ap.logger.error(f"Unexpected error loading memory file '{self._short_term_memory_file}': {e}")
+            self.ap.logger.error(
+                f"Unexpected error loading memory file '{self._short_term_memory_file}': {e}"
+            )
 
-    def get_conversations_str_for_person(self, conversations: typing.List[llm_entities.Message]) -> typing.Tuple[typing.List[str], str]:
+    def get_conversations_str_for_person(
+        self, conversations: typing.List[llm_entities.Message]
+    ) -> typing.Tuple[typing.List[str], str]:
         speakers = []
         conversations_str = ""
         listener = self.assistant_name
-        date_time_pattern = re.compile(r"\[\d{2}年\d{2}月\d{2}日(上午|下午)?\d{2}时\d{2}分\]")
+        date_time_pattern = re.compile(
+            r"\[\d{2}年\d{2}月\d{2}日(上午|下午)?\d{2}时\d{2}分\]"
+        )
 
         for message in conversations:
             role = self.to_custom_names(message.role)
@@ -416,15 +563,21 @@ class Memory:
                         listener = speakers[-1]
                 elif role == self.assistant_name:
                     listener = self.user_name
-                conversations_str += f"{date_time_str}{role}对{listener}说：“{content}”。"
+                conversations_str += (
+                    f"{date_time_str}{role}对{listener}说：“{content}”。"
+                )
                 if role in speakers:
                     speakers.remove(role)
                 speakers.append(role)
         return speakers, conversations_str
 
-    def get_conversations_str_for_group(self, conversations: typing.List[llm_entities.Message]) -> str:
+    def get_conversations_str_for_group(
+        self, conversations: typing.List[llm_entities.Message]
+    ) -> str:
         conversations_str = ""
-        date_time_pattern = re.compile(r"\[\d{2}年\d{2}月\d{2}日(上午|下午)?\d{2}时\d{2}分\]")
+        date_time_pattern = re.compile(
+            r"\[\d{2}年\d{2}月\d{2}日(上午|下午)?\d{2}时\d{2}分\]"
+        )
 
         for message in conversations:
             role = message.role
@@ -444,7 +597,9 @@ class Memory:
 
         return conversations_str
 
-    def get_unreplied_msg(self, unreplied_count: int) -> typing.Tuple[int, typing.List[llm_entities.Message]]:
+    def get_unreplied_msg(
+        self, unreplied_count: int
+    ) -> typing.Tuple[int, typing.List[llm_entities.Message]]:
         count = 0  # 未回复的数量 + 穿插的自己发言的数量 用以正确区分 replied 及 unreplied 分界线
         messages = []
         for message in reversed(self.short_term_memory):
@@ -464,14 +619,18 @@ class Memory:
     def get_last_role(self, conversations: typing.List[llm_entities.Message]) -> str:
         return self.to_custom_names(conversations[-1].role) if conversations else ""
 
-    def get_last_content(self, conversations: typing.List[llm_entities.Message], n: int = 1) -> str:
+    def get_last_content(
+        self, conversations: typing.List[llm_entities.Message], n: int = 1
+    ) -> str:
         if not conversations:
             return ""
 
         last_messages = conversations[-n:] if n <= len(conversations) else conversations
         combined_content = ""
         for message in last_messages:
-            combined_content += self._generator.get_content_str_without_timestamp(message) + " "
+            combined_content += (
+                self._generator.get_content_str_without_timestamp(message) + " "
+            )
 
         return combined_content.strip()
 
@@ -499,12 +658,16 @@ class Memory:
                     user_buffer += " " + content
             elif found_user:
                 if user_buffer:
-                    normalized.append(llm_entities.Message(role="user", content=user_buffer.strip()))
+                    normalized.append(
+                        llm_entities.Message(role="user", content=user_buffer.strip())
+                    )
                     user_buffer = ""
                 normalized.append(llm_entities.Message(role=role, content=content))
 
         if user_buffer:
-            normalized.append(llm_entities.Message(role="user", content=user_buffer.strip()))
+            normalized.append(
+                llm_entities.Message(role="user", content=user_buffer.strip())
+            )
 
         return normalized
 
@@ -512,7 +675,7 @@ class Memory:
         """
         检查短期记忆范围内的重复发言，若assistant没有复读过，则进行复读。
         """
-        if self.repeat_trigger < 1: # 未开启复读功能
+        if self.repeat_trigger < 1:  # 未开启复读功能
             return ""
 
         conversations = self.short_term_memory
@@ -529,8 +692,12 @@ class Memory:
                 if message_content in potential_repeats:
                     potential_repeats.remove(message_content)
                 potential_repeats.append(message_content)
-        repeat_messages = [msg for msg in potential_repeats if msg not in self._already_repeat]
-        self._already_repeat.update(repeat_messages)  # 若有多条重复，只会跟读最新一种，其他则舍弃
+        repeat_messages = [
+            msg for msg in potential_repeats if msg not in self._already_repeat
+        ]
+        self._already_repeat.update(
+            repeat_messages
+        )  # 若有多条重复，只会跟读最新一种，其他则舍弃
 
         if repeat_messages:
             return repeat_messages[-1]
