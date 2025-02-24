@@ -50,12 +50,20 @@ COMMANDS = {
 class WaifuCache:
 
     ap: app.Application
+    bot_account_id: int
 
-    def __init__(self, ap: app.Application, launcher_id: str, launcher_type: str):
+    def __init__(
+        self,
+        ap: app.Application,
+        launcher_id: str,
+        launcher_type: str,
+        bot_account_id: int,
+    ):
+        self.bot_account_id = bot_account_id
         self.launcher_id = launcher_id
         self.launcher_type = launcher_type
         self.langbot_group_rule = False
-        self.memory = Memory(ap, launcher_id, launcher_type)
+        self.memory = Memory(ap, launcher_id, launcher_type, bot_account_id)
         self.value_game = ValueGame(ap)
         self.cards = Cards(ap)
         self.narrator = Narrator(ap, launcher_id)
@@ -102,6 +110,7 @@ class WaifuRunner(runner.RequestRunner):
     author="ElvisChenML",
 )
 class Waifu(BasePlugin):
+    bot_account_id: int
 
     def __init__(self, host: APIHost):
         self.ap = host.ap
@@ -128,6 +137,7 @@ class Waifu(BasePlugin):
         :param ctx: 包含事件上下文信息的 EventContext 对象
         :return: True if allowed to continue, False otherwise
         """
+        self.bot_account_id = ctx.event.query.adapter.bot_account_id
         text_message = str(ctx.event.query.message_chain)
         launcher_id = ctx.event.launcher_id
         sender_id = ctx.event.sender_id
@@ -206,7 +216,9 @@ class Waifu(BasePlugin):
             await self._request_group_reply(ctx)
 
     async def _load_config(self, launcher_id: str, launcher_type: str):
-        self.waifu_cache[launcher_id] = WaifuCache(self.ap, launcher_id, launcher_type)
+        self.waifu_cache[launcher_id] = WaifuCache(
+            self.ap, launcher_id, launcher_type, self.bot_account_id
+        )
         cache = self.waifu_cache[launcher_id]
 
         config_mgr = ConfigManager(
@@ -507,6 +519,7 @@ class Waifu(BasePlugin):
             _, unreplied_conversations = config.memory.get_unreplied_msg(
                 config.unreplied_count
             )
+            bot_account_id = ctx.event.query.adapter.bot_account_id
             related_memories = await config.memory.load_memory(unreplied_conversations)
             if related_memories:
                 config.cards.set_memory(related_memories)
