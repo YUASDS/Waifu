@@ -310,12 +310,13 @@ class Generator:
 
     def _remove_think_content(self, text: str) -> str:
         result = text
-        res = result.split("</think>")
-        think = res[0]
-        logger.debug(f"think: {think}")
-        result = res[1]
-        if "<think>" in result:
-            result = "喵~"
+        if "<think>" in result and "</think>"  in result:
+            res = result.split("</think>")
+            think = res[0]
+            logger.debug(f"think: {think}")
+            result = res[1]
+            if "<think>" in result:
+                result = "喵~"
         return result
 
     def _parse_json_list(self, response: str, generate_tags: bool = False) -> list:
