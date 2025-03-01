@@ -309,23 +309,11 @@ class Generator:
         return re.sub(pattern, "", text)
 
     def _remove_think_content(self, text: str) -> str:
-        pattern = r"<think>[\s\S]*?</think>"
-
         result = text
-        iteration = 0
-        max_iterations = 10
-
-        while "<think>" in result and iteration < max_iterations:
-            if not re.findall(pattern, result):
-                break
-            result = re.sub(pattern, "", result)
-            result = re.sub(r"\n\s*\n", "\n", result.strip())
-            iteration += 1
-
-        if iteration >= max_iterations:
-            self.ap.logger.warning(
-                f"达到最大迭代次数 {max_iterations}，可能存在异常标签"
-            )
+        res = result.split("</think>")
+        think = res[0]
+        logger.debug(f"think: {think}")
+        result = res[1]
         if "<think>" in result:
             result = "喵~"
         return result
